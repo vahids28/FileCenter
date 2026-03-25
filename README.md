@@ -113,6 +113,7 @@ WantedBy=multi-user.target
 ```
 
 ```bash
+systemctl daemon-reload
 # Enable and start
 sudo systemctl enable filecenter
 sudo systemctl start filecenter
