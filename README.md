@@ -1,4 +1,3 @@
-```markdown
 # 📦 FileCenter v2.1
 
 > A lightweight, secure file sharing platform built with pure Python - no external dependencies!
