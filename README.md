@@ -103,8 +103,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/filecenter/v2.2
-ExecStart=/usr/bin/python3 /root/filecenter/v2.2/server.py
+WorkingDirectory=/root/filecenter
+ExecStart=/usr/bin/python3 /root/filecenter/server.py
 Restart=always
 RestartSec=10
 
