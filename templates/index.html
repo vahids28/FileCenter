@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FileCenter - Secure File Sharing</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                📦 FileCenter
+                <span class="logo-version">v2.2</span>
+            </div>
+            <div class="nav">
+                <a href="/" class="nav-link">🏠 Home</a>
+                <a href="/admin" class="nav-link">🔧 Admin</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="alertContainer"></div>
+        
+        <div class="hero" id="heroSection">
+            <h1 id="siteName">FileCenter</h1>
+            <div id="siteDescription" class="hero-description">Loading...</div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📁 Available Files</div>
+                <div>
+                    <input type="text" id="searchInput" placeholder="🔍 Search files..." class="form-control" style="width: 250px;">
+                </div>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="files-table-container">
+                    <table class="files-table">
+                        <thead>
+                            <tr><th>File</th><th>Size</th><th>Uploaded</th><th>Action</th></thead>
+                        <tbody id="fileListBody"></tbody>
+                     </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <div class="page-size-selector">
+                        <span>Show:</span>
+                        <select id="pageSize">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="pagination-controls" id="paginationControls"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="theme-toggle">
+        <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+
+    <script>
+        let allFiles = [];
+        let currentPage = 1;
+        let pageSize = 20;
+        let searchTerm = '';
+        
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                document.getElementById('siteName').textContent = data.site_name || 'FileCenter';
+                document.getElementById('siteDescription').innerHTML = data.site_description || 'Secure file sharing platform';
+            } catch(e) { console.error('Error loading settings:', e); }
+        }
+        
+        async function loadFiles() {
+            try {
+                const res = await fetch('/api/files');
+                allFiles = await res.json();
+                renderFiles();
+            } catch(e) { console.error('Error loading files:', e); }
+        }
+        
+        function renderFiles() {
+            let filtered = allFiles.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            filtered.sort((a,b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+            
+            const totalPages = Math.ceil(filtered.length / pageSize);
+            const start = (currentPage - 1) * pageSize;
+            const paginated = filtered.slice(start, start + pageSize);
+            
+            const tbody = document.getElementById('fileListBody');
+            
+            if (paginated.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><div class="empty-state-icon">📂</div><p>No files available</p></td></tr>';
+                document.getElementById('paginationControls').innerHTML = '';
+                return;
+            }
+            
+            tbody.innerHTML = paginated.map(file => {
+                const downloadUrl = `${window.location.origin}/download/${file.id}`;
+                return `
+                    <tr>
+                        <td><div class="file-info"><div class="file-icon-small">${getIcon(file.name)}</div><a href="${downloadUrl}" target="_blank" class="file-name-link">${escapeHtml(file.name)}</a></div></td>
+                        <td>${formatBytes(file.size)}</td>
+                        <td>${new Date(file.uploaded_at).toLocaleDateString()}</td>
+                        <td><button class="btn btn-primary btn-sm" onclick="downloadFile('${file.id}')">📥 Download</button></td>
+                    </tr>
+                `;
+            }).join('');
+            
+            renderPagination(totalPages);
+        }
+        
+        function renderPagination(totalPages) {
+            const controls = document.getElementById('paginationControls');
+            if (totalPages <= 1) { controls.innerHTML = ''; return; }
+            
+            let html = `<button onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>⏮ First</button>`;
+            html += `<button onclick="goToPage(${currentPage-1})" ${currentPage === 1 ? 'disabled' : ''}>◀ Prev</button>`;
+            
+            let start = Math.max(1, currentPage-2);
+            let end = Math.min(totalPages, currentPage+2);
+            if (start > 1) html += '<button disabled>...</button>';
+            for (let i=start; i<=end; i++) {
+                html += `<button onclick="goToPage(${i})" class="${i===currentPage ? 'active-page' : ''}">${i}</button>`;
+            }
+            if (end < totalPages) html += '<button disabled>...</button>';
+            
+            html += `<button onclick="goToPage(${currentPage+1})" ${currentPage===totalPages ? 'disabled' : ''}>Next ▶</button>`;
+            html += `<button onclick="goToPage(${totalPages})" ${currentPage===totalPages ? 'disabled' : ''}>Last ⏭</button>`;
+            controls.innerHTML = html;
+        }
+        
+        function goToPage(page) { currentPage = page; renderFiles(); }
+        
+        function downloadFile(id) { 
+            window.open(`/download/${id}`, '_blank');
+        }
+        
+        function getIcon(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            const icons = {pdf:'📄',jpg:'🖼️',png:'🖼️',mp4:'🎥',mp3:'🎵',zip:'📦',txt:'📝'};
+            return icons[ext] || '📎';
+        }
+        
+        function formatBytes(b) {
+            if(b===0) return '0 Bytes';
+            const k=1024, sizes=['Bytes','KB','MB','GB'];
+            const i=Math.floor(Math.log(b)/Math.log(k));
+            return parseFloat((b/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            document.querySelector('.theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+        }
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            currentPage = 1;
+            renderFiles();
+        });
+        
+        document.getElementById('pageSize').addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            renderFiles();
+        });
+        
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.querySelector('.theme-btn').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        
+        loadSettings();
+        loadFiles();
+        setInterval(loadFiles, 30000);
+    </script>
+</body>
+</html>
