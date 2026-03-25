@@ -42,8 +42,8 @@ python3 server.py
 ```
 
 ### Default Login
-- **Username:** `vahids28`
-- **Password:** `1375123456`
+- **Username:** `admin`
+- **Password:** `admin`
 
 ### Access Points
 - **Public Page:** `http://localhost:3000`
