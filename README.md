@@ -185,7 +185,7 @@ sudo kill -9 <PID>
 ```
 
 ### Login issues
-- Check credentials: `vahids28` / `1375123456`
+- Check credentials: `admin` / `admin`
 - Clear browser cookies
 - Ensure no trailing spaces
 
