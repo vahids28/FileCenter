@@ -31,11 +31,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/filecenter.git
+git clone https://github.com/vahids28/filecenter.git
 cd filecenter
-
-# Navigate to version 2.2
-cd v2.2
 
 # Run the server
 python3 server.py
@@ -46,8 +43,8 @@ python3 server.py
 - **Password:** `admin`
 
 ### Access Points
-- **Public Page:** `http://localhost:3000`
-- **Admin Panel:** `http://localhost:3000/admin`
+- **Public Page:** `http://ServerIP:3000`
+- **Admin Panel:** `http://ServerIP:3000/admin`
 
 ## 📁 Project Structure
 
